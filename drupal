@@ -171,6 +171,37 @@ checkout = checkout_drupal_project
 # EXTRAS of Drupal plug-in for mr.
 #
 lib =
+  # Apply a patch with `git apply`, and check whether it's already applied.
+  # Patch file must live in the same directory as the `.mrconfig` file (you
+  # can of course `wget` the patch there).
+  #
+  # Example:
+  # [www]
+  # project = drupal
+  # version = 7.19
+  # fixups = DRUPAL_USER=`whoami`; HTTPD_GROUP="staff"; set_drupal_permissions
+  # fixups_append = git_apply_patch only-js-settings-dont-add-jquery_15.patch
+  git_apply_patch() {
+    printf " |- Applying patch '$1'..."
+    MR_CONFIG_PATH=${MR_CONFIG%/*}
+    cd $MR_REPO
+    cp $MR_CONFIG_PATH/$1 .
+    if ! git apply --check $1 >/dev/null 2>&1
+    then
+      if git apply -R --check $1 >/dev/null 2>&1
+      then
+        printf " already applied.\n"
+      else
+        printf " FAILED. Patch not already applied, and failed.\n"
+        return 1
+      fi
+    else
+      git apply $1
+      printf " applied.\n"
+    fi
+    rm $1
+  }
+  
   # As per http://drupal.org/node/244924. `pwd` must already be a Drupal
   # root. Ensure the fix-permissions.sh script from that page is available.
   set_drupal_permissions() {
