@@ -91,8 +91,9 @@
 lib =
   checkout_drupal_project() {
     # Look up variables.
-    project=`mr config ${MR_REPO//${MR_CONFIG%.*}/} project`
-    version=`mr config ${MR_REPO//${MR_CONFIG%.*}/} version`
+    section=$(echo "$MR_REPO" | sed -e "s|${MR_CONFIG%.*}||")
+    project=`mr config "$section" project`
+    version=`mr config "$section" version`
     target=${MR_REPO##*/}
     
     # Perform checkout.
@@ -103,8 +104,10 @@ lib =
   }
   update_drupal_project() {
     # Look up variables.
-    project=`mr config ${MR_REPO//${MR_CONFIG%.*}/} project`
-    version=`mr config ${MR_REPO//${MR_CONFIG%.*}/} version`
+    section=$(echo "$MR_REPO" | sed -e "s|${MR_CONFIG%.*}||")
+    project=`mr config "$section" project`
+    version=`mr config "$section" version`
+    
     # Perform update.
     current_branch=`git rev-parse --abbrev-ref HEAD`
     current_tag=`git describe --tags --always HEAD`
