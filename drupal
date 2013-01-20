@@ -1,0 +1,247 @@
+# Drupal plug-in for Joey Hess' excellent mr tool.
+#
+# This allows using git repositories checked out from git.drupal.org as a
+# pseudo version control system with mr.
+#
+# Author: Wim Leers <work@wimleers.com>
+
+
+
+
+# INSTRUCTIONS
+#
+# To make mr use this file, add a line like this inside the [DEFAULT] section
+# of your .mrconfig:
+#
+#    include = cat /usr/share/mr/drupal
+#
+# and then inside each [repo] section of your .mrconfig for which you want to
+# use the Drupal pseudo VCS:
+#
+#    project = <project name>
+#    version = <tag or branch>
+#
+# A concrete example would be:
+#
+#    project = cdn
+#    version = 7.x-2.5
+#
+# The biggest benefit is that this enables you to use a declarative syntax:
+# say which project and which version (branch name or tag), and this will do
+# all the work for you: just call `mr update`, and new Drupal projects will
+# be checked out, existing ones will be updated to match the new version.
+#
+# It's also recommended to use the included "set_drupal_permissions" function
+# to automatically set the right permissions on your Drupal site.
+#
+# Note that by including this, a default "checkout" action is defined for each
+# repository. This is what allows us to use a declarative syntax. However, you
+# can still mix in any other repository by setting a checkout command.
+
+
+
+
+# EXAMPLE .mrconfig FILE
+#
+# # Drupal itself, along with automatic permissions configuration.
+# [www]
+# project = drupal
+# version = 7.19
+# # Set the (files-owning) DRUPAL_USER for the Drupal permissions script.
+# # Optionally, we can also set HTTPD_GROUP for it.
+# # See http://drupal.org/node/244924.
+# fixups = DRUPAL_USER=`whoami`; HTTPD_GROUP="www-data"; set_drupal_permissions
+# 
+# # A branch of a Drupal module.
+# [www/sites/all/modules/cdn]
+# project = cdn
+# version = 7.x-2.x
+# 
+# # A tag of a Drupal module.
+# [www/sites/all/modules/comment_notify]
+# project = comment_notify
+# version = 7.x-1.1
+# 
+# # Custom themes live in a non-git.drupal.org repository. `mr` is smart enough
+# # to automatically know this is a git repository, and knows how to update it.
+# [www/sites/wimleers.com/themes]
+# checkout = git clone git://github.com/wimleers/wimleers.com-themes.git themes
+
+
+
+
+# REFERENCES
+#
+# - set_drupal_permissions() is heavily based on the fix-permissions.sh script
+#   at http://drupal.org/node/244924, and has contributed upstream to it.
+
+
+
+
+# TODO:
+#
+# - http://en.wikipedia.org/wiki/Development,_testing,_acceptance_and_production
+# - support for shallow cloning, but only for tags
+
+
+
+#
+# CORE of Drupal plug-in for mr.
+#
+lib =
+  checkout_drupal_project() {
+    # Look up variables.
+    project=`mr config ${MR_REPO//${MR_CONFIG%.*}/} project`
+    version=`mr config ${MR_REPO//${MR_CONFIG%.*}/} version`
+    target=${MR_REPO##*/}
+    
+    # Perform checkout.
+    git clone --recursive http://git.drupal.org/project/$project.git $target
+    cd $target
+    echo "Checking out version $version"
+    git checkout -q $version
+  }
+  update_drupal_project() {
+    # Look up variables.
+    project=`mr config ${MR_REPO//${MR_CONFIG%.*}/} project`
+    version=`mr config ${MR_REPO//${MR_CONFIG%.*}/} version`
+    # Perform update.
+    current_branch=`git rev-parse --abbrev-ref HEAD`
+    current_tag=`git describe --tags --always HEAD`
+    if [ $current_tag = $version ]; then
+      echo "Already at tag $version."
+    elif [ $current_branch = $version ]; then
+      echo "Already on branch $version, but pulling in updates."
+      git pull -q
+    else
+      old_version=""
+      if [ $current_branch = "HEAD" ]; then
+        old_version=$current_tag
+      else
+        old_version=$current_branch
+      fi
+      echo "Updating '$project' to version $version (from $old_version)..."
+      git checkout -q $version
+      new_branch=`git rev-parse --abbrev-ref HEAD`
+      if [ $new_branch != "HEAD" ]; then
+        echo "Now pulling in updates."
+        git pull -q
+      fi
+      echo "Done."
+    fi
+  }
+# Create a "gdo" (git.drupal.org) pseudo-VCS, which allows us to use a custom,
+# declarative per-Drupal project syntax.
+git_test = perl: -e "$ENV{MR_REPO}/.git" && `git config --file "$ENV{MR_REPO}/.git/config" --get remote.origin.url` !~ /git.drupal.org/
+gdo_test = perl: -e "$ENV{MR_REPO}/.git" && `git config --file "$ENV{MR_REPO}/.git/config" --get remote.origin.url` =~ /git.drupal.org/
+gdo_update = update_drupal_project
+gdo_status = git status -s "$@" || true
+gdo_commit = echo "Committing to git.drupal.org from within 'mr' unsupported; go into the project directory and use 'git' directly."
+gdo_record = git commit -a "$@"
+gdo_push = echo "Pushing to git.drupal.org from within 'mr' unsupported; go into the project directory and use 'git' directly."
+gdo_diff = git diff "$@"
+gdo_log = git log "$@"
+gdo_grep = git grep "$@"
+gdo_register =
+  url="`LC_ALL=C git config --get remote.origin.url`" || true
+  if [ -z "$url" ]; then
+    error "Cannot determine git URL."
+  fi
+  project=`echo $url | cut -d/ -f5 | cut -d. -f1`
+  current_branch=`git rev-parse --abbrev-ref HEAD`
+  current_tag=`git describe --tags --always HEAD`
+  version=""
+  if [ $current_branch = "HEAD" ]; then
+    version=$current_tag
+  else
+    version=$current_branch
+  fi
+  echo "Registering Drupal project '$project', version $version in $MR_CONFIG"
+  mr -c "$MR_CONFIG" config "`pwd`" project=$project
+  mr -c "$MR_CONFIG" config "`pwd`" version=$version
+
+# Default to the "gdo" pseudo-VCS, which allows us to use declarative syntax
+# to automatically download (git checkout) and update Drupal projects.
+checkout = checkout_drupal_project
+
+
+
+
+#
+# EXTRAS of Drupal plug-in for mr.
+#
+lib =
+  # As per http://drupal.org/node/244924. `pwd` must already be a Drupal
+  # root. Ensure the fix-permissions.sh script from that page is available.
+  set_drupal_permissions() {
+    drupal_path=${MR_REPO%/}
+    drupal_user=${DRUPAL_USER}
+    httpd_group="${HTTPD_GROUP:-www-data}"
+    
+    print_help() {
+      printf "\n\tThis script is used to fix permissions of a Drupal installation\n"
+      printf "\tyou need to provide the following arguments:\n\n"
+      printf "\t1) Path to your Drupal installation.\n"
+      printf "\t2) Username of the user that you want to give files/directories ownership.\n"
+      printf "\t3) HTTPD group name (defaults to www-data for Apache).\n\n"
+      printf "\tUsage: (sudo) bash ${0##*/} --drupal_path=PATH --drupal_user=USER --httpd_group=GROUP\n"
+      printf "\tExample: (sudo) bash ${0##*/} --drupal_path=/usr/local/apache2/htdocs --drupal_user=john --httpd_group=www-data\n"
+      exit 0
+    }
+    
+    # Parse Command Line Arguments
+    while [ $# -gt 0 ]; do
+            case "$1" in
+                    --drupal_path=*) 
+          drupal_path="${1#*=}"
+          ;;
+        --drupal_user=*)
+          drupal_user="${1#*=}"
+          ;;
+        --httpd_group=*)
+          httpd_group="${1#*=}"
+          ;;
+        --help) print_help;;
+        *)
+          printf "Invalid argument, run --help for valid arguments.\n";
+          exit 1
+      esac
+      shift
+    done
+    
+    if [ -z "${drupal_path}" ] || [ ! -d "${drupal_path}/sites" ] || [ ! -f "${drupal_path}/core/modules/system/system.module" ] && [ ! -f "${drupal_path}/modules/system/system.module" ]; then
+      printf "\tERROR: Please provide a valid Drupal path.\n"
+      print_help
+      exit 1
+    fi
+    
+    if [ -z "${drupal_user}" ] || [ $(id -un ${drupal_user} 2> /dev/null) != "${drupal_user}" ]; then
+      printf "\tERROR: Please provide a valid user.\n"
+      print_help
+      exit 1
+    fi
+    
+    
+    cd $drupal_path
+    printf "Changing ownership of all contents of \"${drupal_path}\":\n user => \"${drupal_user}\" \t group => \"${httpd_group}\"\n"
+    chown -R ${drupal_user}:${httpd_group} .
+    
+    printf "Changing permissions of all directories inside \"${drupal_path}\" to \"rwxr-x---\"...\n"
+    find . -type d -exec chmod u=rwx,g=rx,o= '{}' \;
+    
+    printf "Changing permissions of all files inside \"${drupal_path}\" to \"rw-r-----\"...\n"
+    find . -type f -exec chmod u=rw,g=r,o= '{}' \;
+    
+    printf "Changing permissions of \"files\" directories in \"${drupal_path}/sites\" to \"rwxrwx---\"...\n"
+    cd ${drupal_path}/sites
+    find . -type d -name files -exec chmod ug=rwx,o= '{}' \;
+    printf "Changing permissions of all files inside all \"files\" directories in \"${drupal_path}/sites\" to \"rw-rw----\"...\n"
+    printf "Changing permissions of all directories inside all \"files\" directories in \"${drupal_path}/sites\" to \"rwxrwx---\"...\n"
+    
+    for x in ./*/files; do
+      find ${x} -type d -exec chmod ug=rwx,o= '{}' \;
+      find ${x} -type f -exec chmod ug=rw,o= '{}' \;
+    done
+    
+    echo "Done settings proper permissions on files and directories"
+  }

@@ -1,0 +1,132 @@
+# An example config file for the mr(1) command.
+#
+# Note that this file should be renamed to ".mrconfig" if you want to use it.
+#
+# This example leverages the Drupal plug-in.
+
+[DEFAULT]
+include = cat /usr/share/mr/drupal
+
+
+[www]
+project = drupal
+version = 7.19
+# Set the (files-owning) DRUPAL_USER for the Drupal permissions script.
+# Optionally, we can also set HTTPD_GROUP for it.
+fixups = DRUPAL_USER=`whoami`; HTTPD_GROUP="staff"; set_drupal_permissions
+
+[www/sites/wimleers.com/modules]
+checkout = git clone git://github.com/wimleers/wimleers.com-modules.git modules
+
+[www/sites/all/modules/cdn]
+project = cdn
+version = 7.x-2.5
+
+[www/sites/all/modules/comment_notify]
+project = comment_notify
+version = 7.x-1.1
+
+# Code per node (custom CSS per node).
+[www/sites/all/modules/cpn]
+project = cpn
+version = 7.x-1.4
+
+# Only necessary because it is a dependency of Views.
+[www/sites/all/modules/ctools]
+project = ctools
+version = 7.x-1.2
+
+[www/sites/all/modules/date]
+project = date
+version = 7.x-2.6
+
+[www/sites/all/modules/diff]
+project = diff
+version = 7.x-3.2
+
+[www/sites/all/modules/droptor]
+project = droptor
+version = 7.x-3.0
+
+[www/sites/all/modules/drupad]
+project = drupad
+version = 7.x-1.13
+
+# Two-factor authentication.
+[www/sites/all/modules/duo]
+project = duo
+version = 7.x-1.7
+
+[www/sites/all/modules/filefield_sources]
+project = filefield_sources
+version = 7.x-1.7
+
+[www/sites/all/modules/globalredirect]
+project = globalredirect
+version = 7.x-1.5
+
+[www/sites/all/modules/google_analytics]
+project = google_analytics
+version = 7.x-1.3
+
+[www/sites/all/modules/gravatar]
+project = gravatar
+version = 7.x-1.1
+
+[www/sites/all/modules/hierarchical_select]
+project = hierarchical_select
+version = 7.x-3.0-alpha5
+
+[www/sites/all/modules/image_resize_filter]
+project = image_resize_filter
+version = 7.x-1.13
+
+[www/sites/all/modules/insert]
+project = insert
+version = 7.x-1.2
+
+[www/sites/all/modules/link]
+project = link
+version = 7.x-1.0
+
+[www/sites/all/modules/markdown]
+project = markdown
+version = 7.x-1.1
+
+[www/sites/all/modules/module_filter]
+project = module_filter
+version = 7.x-1.7
+
+[www/sites/all/modules/mollom]
+project = mollom
+version = 7.x-2.3
+
+[www/sites/all/modules/openidurl]
+project = openidurl
+version = 7.x-1.5
+
+[www/sites/all/modules/references]
+project = references
+version = 7.x-2.0
+
+[www/sites/all/modules/token]
+project = token
+version = 7.x-1.4
+
+[www/sites/all/modules/typogrify]
+project = typogrify
+version = 7.x-1.0-rc5
+
+[www/sites/all/modules/views]
+project = views
+version = 7.x-3.5
+
+[www/sites/all/modules/xmlsitemap]
+project = xmlsitemap
+version = 7.x-2.0-rc2
+
+
+# DELETED MODULES
+
+[www/sites/all/modules/toc_filter]
+deleted = true
