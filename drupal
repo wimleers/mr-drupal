@@ -97,9 +97,9 @@ lib =
     target=${MR_REPO##*/}
     
     # Perform checkout.
+    echo " |- Checking out version $version."
     git clone --recursive http://git.drupal.org/project/$project.git $target
     cd $target
-    echo " |- Checking out version $version."
     git checkout -q $version
   }
   update_drupal_project() {
@@ -117,19 +117,21 @@ lib =
       echo " |- Already on branch $version, but pulling in updates."
       git pull -q
     else
+      # Determining old version: was it a tag or a branch?
       old_version=""
+      branch_to_pull=""
       if [ $current_branch = "HEAD" ]; then
         old_version=$current_tag
+        branch_to_pull=${current_tag%.*}.x # Strip all characters after the last period, replace with "x".
       else
         old_version=$current_branch
+        branch_to_pull=$current_branch
       fi
       echo " |- Updating '$project' to version $version (from $old_version)..."
+      git checkout -- .
+      git checkout -q $branch_to_pull
+      git pull -q
       git checkout -q $version
-      new_branch=`git rev-parse --abbrev-ref HEAD`
-      if [ $new_branch != "HEAD" ]; then
-        echo " |- Now pulling in updates."
-        git pull -q
-      fi
       echo "Done."
     fi
   }
