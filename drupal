@@ -47,10 +47,10 @@
 # [www]
 # project = drupal
 # version = 7.19
-# # Set the (files-owning) DRUPAL_USER for the Drupal permissions script.
-# # Optionally, we can also set HTTPD_GROUP for it.
+# # Set the proper file system permissions on all Drupal files. The owner and
+# # group are calculated by the user-defined functions above.
 # # See http://drupal.org/node/244924.
-# fixups = DRUPAL_USER=`whoami`; HTTPD_GROUP="www-data"; set_drupal_permissions
+# fixups = drupal_set_permissions `whoami` 'www-data'
 # 
 # # A branch of a Drupal module.
 # [www/sites/all/modules/cdn]
@@ -72,7 +72,7 @@
 
 # REFERENCES
 #
-# - set_drupal_permissions() is heavily based on the fix-permissions.sh script
+# - drupal_set_permissions() is heavily based on the fix-permissions.sh script
 #   at http://drupal.org/node/244924, and has contributed upstream to it.
 
 
@@ -232,41 +232,19 @@ lib =
   
   # As per http://drupal.org/node/244924. `pwd` must already be a Drupal
   # root. Ensure the fix-permissions.sh script from that page is available.
-  set_drupal_permissions() {
+  drupal_set_permissions() {
     drupal_path=${MR_REPO%/}
-    drupal_user=${DRUPAL_USER}
-    httpd_group="${HTTPD_GROUP:-www-data}"
+    drupal_user=$1
+    httpd_group="${2:-www-data}"
     
     print_help() {
       printf "\n\tThis script is used to fix permissions of a Drupal installation\n"
       printf "\tyou need to provide the following arguments:\n\n"
-      printf "\t1) Path to your Drupal installation.\n"
-      printf "\t2) Username of the user that you want to give files/directories ownership.\n"
-      printf "\t3) HTTPD group name (defaults to www-data for Apache).\n\n"
-      printf "\tUsage: (sudo) bash ${0##*/} --drupal_path=PATH --drupal_user=USER --httpd_group=GROUP\n"
-      printf "\tExample: (sudo) bash ${0##*/} --drupal_path=/usr/local/apache2/htdocs --drupal_user=john --httpd_group=www-data\n"
+      printf "\t1) Username of the user that you want to give files/directories ownership.\n"
+      printf "\t2) HTTPD group name (defaults to www-data for Apache).\n\n"
+      printf "\tNote: it is applied to the current MR repository, so that must be the root of a Drupal site.\n\n"
       exit 0
     }
-    
-    # Parse Command Line Arguments
-    while [ $# -gt 0 ]; do
-            case "$1" in
-                    --drupal_path=*) 
-          drupal_path="${1#*=}"
-          ;;
-        --drupal_user=*)
-          drupal_user="${1#*=}"
-          ;;
-        --httpd_group=*)
-          httpd_group="${1#*=}"
-          ;;
-        --help) print_help;;
-        *)
-          printf "Invalid argument, run --help for valid arguments.\n";
-          exit 1
-      esac
-      shift
-    done
     
     if [ -z "${drupal_path}" ] || [ ! -d "${drupal_path}/sites" ] || [ ! -f "${drupal_path}/core/modules/system/system.module" ] && [ ! -f "${drupal_path}/modules/system/system.module" ]; then
       printf "\tERROR: Please provide a valid Drupal path.\n"
