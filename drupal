@@ -287,3 +287,8 @@ lib =
     
     printf " /\n"
   }
+  
+  # Removes all .txt files from the Drupal root, except for robots.txt.
+  drupal_rm_unnecessary_txt() {
+    ls $MR_REPO/*.txt | grep -v robots.txt | xargs -I{} rm {}
+  }
