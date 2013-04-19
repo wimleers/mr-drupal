@@ -31,7 +31,7 @@
 # all the work for you: just call `mr update`, and new Drupal projects will
 # be checked out, existing ones will be updated to match the new version.
 #
-# It's also recommended to use the included "set_drupal_permissions" function
+# It's also recommended to use the included "drupal_set_permissions" function
 # to automatically set the right permissions on your Drupal site.
 #
 # Note that by including this, a default "checkout" action is defined for each
@@ -74,6 +74,8 @@
 #
 # - drupal_set_permissions() is heavily based on the fix-permissions.sh script
 #   at http://drupal.org/node/244924, and has contributed upstream to it.
+# - on() is included in mr's complex .mrconfig example, see
+#   https://github.com/joeyh/mr/blob/master/mrconfig.complex
 
 
 
@@ -88,7 +90,7 @@
 # CORE of Drupal plug-in for mr.
 #
 lib =
-  checkout_drupal_project() {
+  gdo_checkout() {
     # Look up variables.
     section=$(echo "$MR_REPO" | sed -e "s|${MR_CONFIG%.*}||")
     project=`mr config "$section" project`
@@ -101,7 +103,7 @@ lib =
     cd $target
     git checkout -q $version
   }
-  update_drupal_project() {
+  gdo_update() {
     # Look up variables.
     section=$(echo "$MR_REPO" | sed -e "s|${MR_CONFIG%.*}||")
     project=`mr config "$section" project`
@@ -138,7 +140,7 @@ lib =
 # declarative per-Drupal project syntax.
 git_test = perl: -e "$ENV{MR_REPO}/.git" && `git config --file "$ENV{MR_REPO}/.git/config" --get remote.origin.url` !~ /git.drupal.org/
 gdo_test = perl: -e "$ENV{MR_REPO}/.git" && `git config --file "$ENV{MR_REPO}/.git/config" --get remote.origin.url` =~ /git.drupal.org/
-gdo_update = update_drupal_project
+gdo_update = gdo_update
 gdo_status = git status -s "$@" || true
 gdo_commit = echo "Committing to git.drupal.org from within 'mr' unsupported; go into the project directory and use 'git' directly."
 gdo_record = git commit -a "$@"
@@ -166,7 +168,7 @@ gdo_register =
 
 # Default to the "gdo" pseudo-VCS, which allows us to use declarative syntax
 # to automatically download (git checkout) and update Drupal projects.
-checkout = checkout_drupal_project
+checkout = gdo_checkout
 
 
 
@@ -183,7 +185,6 @@ lib =
   # Checks whether the given host basename is one of the listed values. A
   # value can also have a username in it, e.g. "user@host".
   # This can be used to apply http://en.wikipedia.org/wiki/Development,_testing,_acceptance_and_production
-  # Source: https://github.com/joeyh/mr/blob/master/mrconfig.complex
   on() {
     for host in $@; do
       if [ "${host%@*}" != "${host#*@}" ]; then
@@ -201,14 +202,13 @@ lib =
   
   # Apply a patch with `git apply`, and check whether it's already applied.
   # Patch file must live in the same directory as the `.mrconfig` file (you
-  # can of course `wget` the patch there).
+  # can of course `wget` the patch there too).
   #
   # Example:
   # [www]
   # project = drupal
   # version = 7.19
-  # fixups = DRUPAL_USER=`whoami`; HTTPD_GROUP="staff"; set_drupal_permissions
-  # fixups_append = git_apply_patch only-js-settings-dont-add-jquery_15.patch
+  # fixups = git_apply_patch only-js-settings-dont-add-jquery_15.patch
   git_apply_patch() {
     printf " |- Applying patch '$1'..."
     MR_CONFIG_PATH=${MR_CONFIG%/*}
