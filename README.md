@@ -53,10 +53,10 @@ Steps to be repeated for each Drupal site:
     [www]
     project = drupal
     version = 7.19
-    # Set the (files-owning) DRUPAL_USER for the Drupal permissions script.
-    # Optionally, we can also set HTTPD_GROUP for it.
+    # Set the proper file system permissions on all Drupal files. The owner is
+    # set to the current user, the group is set to www-data.
     # See http://drupal.org/node/244924.
-    fixups = DRUPAL_USER=`whoami`; HTTPD_GROUP="www-data"; set_drupal_permissions
+    fixups = drupal_set_permissions `whoami` 'www-data'
 
     # A branch of a Drupal module.
     [www/sites/all/modules/cdn]
@@ -107,6 +107,66 @@ mr update: (failed: /htdocs/wimleers.com/www/sites/all/modules/drupad/)
 The `devel` module is skipped (no error!) because it's marked as deleted and doesn't exist. The `drupad` module is marked with an error message
 
 
+# Advanced: environment-specific (Dev vs. Prod) actions
+
+If the above doesn't look like it would cut it for you because you need to set up things differently for your local development setup and your production server, then you're right (i.e. [DTAP](http://en.wikipedia.org/wiki/Development,_testing,_acceptance_and_production)).
+
+To easily deal with that too, this `drupal` extension for `mr` provides three functions:
+
+1. `whoami()` — a simple wrapper around the `whoami` command.
+2. `hostname()` — a simple wrapper around the `hostname` command.
+3. `on()` — uses the two functions above to be able to write something like
+   `on 'wim@wimleers.local'`, which evaluates to true if those are indeed the
+   current user and host.
+
+You can then upgrade the above example of
+
+```ini
+[DEFAULT]
+include = cat /usr/share/mr/drupal
+
+[www]
+project = drupal
+version = 7.19
+fixups = drupal_set_permissions `whoami` 'www-data'
+```
+
+to something like this:
+
+```ini
+[DEFAULT]
+include = cat /usr/share/mr/drupal
+lib =
+  get_dtap() {
+    if on 'wim@wimleers.local'; then
+      echo 'development'
+    else
+      echo 'production'
+    fi
+  }
+  drupal_fs_group() {
+    if [ "$(get_dtap)" = 'development' ]; then
+      echo 'staff' # Mac OS X
+    else
+      echo 'www-data' # Linux
+    fi
+  }
+
+[www]
+project = drupal
+version = 7.19
+fixups = drupal_set_permissions `whoami` `drupal_fs_group`
+```
+
+But really, you can do whatever you want: anything that can be used in a shell script can also be used here.
+
+
+
+
 # Conclusion
 
-One file and one command together cover 90% of the smallish Drupal site management needs. Easy to understand, very few dependencies, extremely customizable.
+One file (`.mrconfig`) and one command (`mr update`) together cover 90% of the smallish Drupal site management needs.
+
+Easy to understand, very few dependencies, extremely customizable.
+
+Simple for simple deployments, complex for complex deployments. Instead of *always* complex.
