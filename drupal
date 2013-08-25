@@ -200,6 +200,14 @@ lib =
     return 1
   }
   
+  # Create (or update) a symlink.
+  create_symlink() {
+    printf " |- Symlinking $2 to $1..."
+    rm -f $2
+    ln -s $1 $2
+    printf " symlinked.\n"
+  }
+  
   # Apply a patch with `git apply`, and check whether it's already applied.
   # Patch file must live in the same directory as the `.mrconfig` file (you
   # can of course `wget` the patch there too).
@@ -291,4 +299,10 @@ lib =
   # Removes all .txt files from the Drupal root, except for robots.txt.
   drupal_rm_unnecessary_txt() {
     ls $MR_REPO/*.txt | grep -v robots.txt | xargs -I{} rm {}
+  }
+  
+  # Symlinks Drupal's default Druplicon favicon from misc/favicon.ico to the
+  # Drupal root because most browsers still request the favicon from there.
+  drupal_symlink_druplicon_favicon() {
+    create_symlink $MR_REPO/misc/favicon.ico $MR_REPO/favicon.ico
   }

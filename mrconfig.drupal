@@ -39,6 +39,9 @@ version = 7.19
 # Set the proper file system permissions on all Drupal files. The owner and
 # group are calculated by the user-defined functions above.
 fixups = drupal_set_permissions `drupal_fs_owner` `drupal_fs_group`
+# Symlinks Drupal's default Druplicon favicon from misc/favicon.ico to the
+# Drupal root because most browsers still request the favicon from there.
+fixups_append = drupal_symlink_druplicon_favicon
 
 [www/sites/wimleers.com/modules]
 checkout = git clone git://github.com/wimleers/wimleers.com-modules.git modules
