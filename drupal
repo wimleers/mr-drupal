@@ -229,13 +229,14 @@ lib =
         printf " already applied.\n"
       else
         printf " FAILED. Patch not already applied, and failed.\n"
+        rm $1
         return 1
       fi
     else
       git apply $1
+      rm $1
       printf " applied.\n"
     fi
-    rm $1
   }
   
   # As per http://drupal.org/node/244924. `pwd` must already be a Drupal
