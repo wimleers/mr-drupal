@@ -227,6 +227,7 @@ lib =
       if git apply -R --check $1 >/dev/null 2>&1
       then
         printf " already applied.\n"
+        rm $1
       else
         printf " FAILED. Patch not already applied, and failed.\n"
         rm $1
