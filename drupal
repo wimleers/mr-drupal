@@ -305,5 +305,5 @@ lib =
   # Symlinks Drupal's default Druplicon favicon from misc/favicon.ico to the
   # Drupal root because most browsers still request the favicon from there.
   drupal_symlink_druplicon_favicon() {
-    create_symlink $MR_REPO/misc/favicon.ico $MR_REPO/favicon.ico
+    create_symlink misc/favicon.ico $MR_REPO/favicon.ico
   }
