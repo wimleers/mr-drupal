@@ -287,12 +287,12 @@ lib =
     printf "  |- Changing permissions of \"files\" directories inside \"sites\" directory to \"rwxrwx---\"...\n"
     cd ${drupal_path}/sites
     find . -type d -name files -exec chmod ug=rwx,o= '{}' \;
-    printf "  |- Changing permissions of all files inside all \"files\" directories to \"rw-rw----\"...\n"
-    printf "  |- Changing permissions of all directories inside all \"files\" directories to \"rwxrwx---\"...\n"
+    printf "  |- Changing permissions of all files inside all \"files\" directories to \"rw-rw-r--\"...\n"
+    printf "  |- Changing permissions of all directories inside all \"files\" directories to \"rwxrwx--x\"...\n"
     
     for x in ./*/files; do
-      find ${x} -type d -exec chmod ug=rwx,o= '{}' \;
-      find ${x} -type f -exec chmod ug=rw,o= '{}' \;
+      find ${x} -type d -exec chmod ug=rwx,o=x '{}' \;
+      find ${x} -type f -exec chmod ug=rw,o=r '{}' \;
     done
     
     printf " /\n"
