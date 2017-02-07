@@ -53,10 +53,22 @@ Steps to be repeated for each Drupal site:
     [www]
     project = drupal
     version = 7.19
-    # Set the proper file system permissions on all Drupal files. The owner is
-    # set to the current user, the group is set to www-data.
-    # See http://drupal.org/node/244924.
-    fixups = drupal_set_permissions `whoami` 'www-data'
+    # Removes CHANGELOG.txt et cetera.
+    fixups = drupal_rm_unnecessary_txt
+    # Symlinks Drupal's default Druplicon favicon from misc/favicon.ico to the
+    # Drupal root because most browsers still request the favicon from there.
+    fixups_append = drupal_symlink_druplicon_favicon
+
+    # Same as [www], but with a different key. Dummy target to run fixups after
+    # EVERYTHING else: fixups that must be applied to ALL modules/themes.
+    [www/../www]
+    # Set the proper file system permissions on all Drupal files. The owner and
+    # group are calculated by the user-defined functions above.
+    fixups = drupal_set_permissions `drupal_fs_owner` `drupal_fs_group`
+    checkout = :
+    status = :
+    update = :
+    order = 100
 
     # A branch of a Drupal module.
     [www/sites/all/modules/cdn]
@@ -74,7 +86,7 @@ Steps to be repeated for each Drupal site:
     checkout = git clone git://github.com/wimleers/wimleers.com-themes.git themes
     ```
 As you can see, it's easy to mix in custom modules/repositories.
-2. Run `mr update`. Your Drupal site will be built based on your `.mrconfig` file, relative to where the `.mrconfig` file lives. Speed it up by telling it to work in parallel: `mr -j 10 update` would do up to 10 updates in parallel.
+2. Run `mr update`. Your Drupal site will be built based on your `.mrconfig` file, relative to where the `.mrconfig` file lives.
 3. Optionally check in the `.mrconfig` file into a VCS, so you can roll back to previous versions. Preferable, but not essential.
 
 We leveraged one "advanced" feature of `mr`: the ability to do "fixups" (after each checkout/update). In this case, to guarantee correct permissions.
@@ -88,7 +100,7 @@ We leveraged one "advanced" feature of `mr`: the ability to do "fixups" (after e
 
 The only exception: those that are marked as deleted. `mr` does not actually delete them for you; assuming you've marked the `devel` and `drupad` modules as deleted and the `devel` module no longer exists, it'll output something like this:
 ```shell
-$ mr -j 20 --stats update
+$ mr --stats update
 mr update: /htdocs/wimleers.com/www/sites/all/modules/cdn
 Updating 'cdn' to version 7.x-2.5 (from 7.x-2.3)...
 Done.
@@ -128,7 +140,15 @@ include = cat /usr/share/mr/drupal
 [www]
 project = drupal
 version = 7.19
-fixups = drupal_set_permissions `whoami` 'www-data'
+fixups = drupal_rm_unnecessary_txt
+fixups_append = drupal_symlink_druplicon_favicon
+
+[www/../www]
+fixups = drupal_set_permissions `drupal_fs_owner` `drupal_fs_group`
+checkout = :
+status = :
+update = :
+order = 100
 ```
 
 to something like this:
@@ -155,7 +175,15 @@ lib =
 [www]
 project = drupal
 version = 7.19
-fixups = drupal_set_permissions `whoami` `drupal_fs_group`
+fixups = drupal_rm_unnecessary_txt
+fixups_append = drupal_symlink_druplicon_favicon
+
+[www/../www]
+fixups = drupal_set_permissions `drupal_fs_owner` `drupal_fs_group`
+checkout = :
+status = :
+update = :
+order = 100
 ```
 
 But really, you can do whatever you want: anything that can be used in a shell script can also be used here.

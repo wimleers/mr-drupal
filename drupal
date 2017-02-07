@@ -47,10 +47,20 @@
 # [www]
 # project = drupal
 # version = 7.19
+# fixups = drupal_rm_unnecessary_txt
+# fixups_append = drupal_symlink_druplicon_favicon
+#
+# # Same as [www], but with a different key. Dummy target to run fixups after
+# # EVERYTHING else: fixups that must be applied to ALL modules/themes.
+# [www/../www]
 # # Set the proper file system permissions on all Drupal files. The owner and
 # # group are calculated by the user-defined functions above.
 # # See http://drupal.org/node/244924.
 # fixups = drupal_set_permissions `whoami` 'www-data'
+# checkout = :
+# status = :
+# update = :
+# order = 100
 # 
 # # A branch of a Drupal module.
 # [www/sites/all/modules/cdn]
